@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>树种分布饼图</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body {
+            font-family: 'KaiTi', '楷体', serif; /* 修改为楷体 */
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #chart-container {
+            width: 900px;
+            height: 600px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-family: 'KaiTi', '楷体', serif; /* 图表容器内字体 */
+        }
+        h1 {
+            text-align: center;
+            color: #000;
+            margin-bottom: 30px;
+            font-family: 'KaiTi', '楷体', serif; /* 标题字体 */
+            font-weight: bold;
+            font-size: 24px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 500px;
+            background-color: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            z-index: 1000;
+            border: 1px solid white;
+            font-family: 'KaiTi', '楷体', serif; /* 模态框字体 */
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #a5d6a7;
+            font-family: 'KaiTi', '楷体', serif; /* 模态框头部字体 */
+        }
+        .modal-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #000;
+            font-family: 'KaiTi', '楷体', serif; /* 模态框标题字体 */
+        }
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #000;
+            font-family: 'KaiTi', '楷体', serif; /* 关闭按钮字体 */
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+        .modal-content {
+            line-height: 1.6;
+            color: #000;
+            padding: 10px;
+            background-color: transparent;
+            border-radius: 5px;
+            font-family: 'KaiTi', '楷体', serif; /* 内容字体 */
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 999;
+        }
+    </style>
+ 
+</head>
+<body>
+    <!-- <h1>树种分布统计</h1> -->
+    <div id="chart-container"></div>
+    
+    <!-- 树种介绍模态框 -->
+    <div class="overlay" id="overlay"></div>
+    <div class="modal" id="species-modal">
+        <div class="modal-header">
+            <div class="modal-title" id="modal-title"></div>
+            <button class="close-btn" id="close-btn">&times;</button>
+        </div>
+        <div class="modal-content" id="modal-content"></div>
+    </div>
+
+    <script>
+        // 初始化图表
+        var chartDom = document.getElementById('chart-container');
+        var myChart = echarts.init(chartDom);
+        
+        // 树种数据
+        var treeData = [
+            {name: '樟树', value: 731, desc: '樟树是常绿大乔木，树冠广展，枝叶茂密，气势雄伟，是优良的绿化树、行道树及庭荫树。树皮幼时绿色，平滑，老时渐变为黄褐色或灰褐色纵裂。木材及根、枝、叶可提取樟脑和樟油，是医药及出口物资。'},
+            {name: '悬铃木', value: 458, desc: '悬铃木又称法国梧桐，是世界著名的优良庭荫树和行道树，有"行道树之王"之称。树形雄伟端庄，叶大荫浓，干皮光滑，适应性强，又耐修剪整形。对二氧化硫、氯气等有毒气体有较强的抗性。'},
+            {name: '梧桐', value: 424, desc: '梧桐树皮青绿色，平滑，叶心形，掌状分裂，是中国传统文化中的祥瑞之树。"梧桐相待老，鸳鸯会双死"象征忠贞爱情；"栽下梧桐树，引来金凤凰"则代表吉祥与机遇。木材轻软，是制作乐器的好材料。'},
+            {name: '雪松', value: 147, desc: '雪松是常绿乔木，树冠尖塔形，大枝平展，小枝略下垂，是世界著名的庭园观赏树种之一。木材坚实，纹理致密，有树脂，具芳香，不易受潮，可作建筑、桥梁、家具等用材。树姿雄伟，适宜孤植于草坪中央、建筑前庭中心等。'},
+            {name: '玉兰', value: 120, desc: '玉兰是落叶乔木，花白色到淡紫红色，大型、芳香，花冠杯状，早春开花，先花后叶。玉兰花外形极像莲花，盛开时花瓣展向四方，具有很高的观赏价值。为上海市市花，也是中国人民大学校花。'},
+            {name: '桂树（含桂花）', value: 109, desc: '桂花是中国传统十大名花之一，集绿化、美化、香化于一体的观赏与实用兼备的优良园林树种。桂花清可绝尘，浓能远溢，堪称一绝。尤其是仲秋时节，丛桂怒放，夜静轮圆之际，把酒赏桂，陈香扑鼻，令人神清气爽。'},
+            {name: '黄杨', value: 104, desc: '黄杨是常绿灌木或小乔木，枝叶茂密，叶光亮，常作绿篱和修剪造型观赏。黄杨生长缓慢，但寿命长，耐修剪，是制作盆景的优良树种。木材细腻，可用于雕刻。民间有"鸟中之王称凤凰，木中之王为黄杨"之说。'},
+            {name: '松树（含松）', value: 96, desc: '松树是常绿乔木，树形多姿，苍劲挺拔，四季常青，不畏风雪严寒，象征坚贞不屈的英雄气概。松树具有较强的防尘、减噪和杀菌能力，也耐干旱瘠薄，是荒山造林的主要树种。松木可供建筑、枕木、矿柱等用，松脂可提取松香、松节油。'},
+            {name: '银杏', value: 80, desc: '银杏为落叶大乔木，叶扇形，秋季变黄，是现存种子植物中最古老的孑遗植物，有"活化石"之称。银杏树体高大，树干通直，姿态优美，春夏翠绿，深秋金黄，是理想的园林绿化树种。银杏果营养丰富，但有小毒不宜多食。'},
+            {name: '楝树', value: 73, desc: '楝树是落叶乔木，树冠宽阔平展，枝叶秀丽，花淡紫色，有芳香，是优良的庭荫树和行道树。楝树耐烟尘、抗二氧化硫能力强，并能杀菌，故适宜用作厂矿区绿化树种。其花、叶、种子等均可入药，木材是制作家具、乐器的好材料。'},
+            {name: '其他树种', value: 300, desc: '其他各类树种的总和，包括石楠、鸡爪槭、紫薇等多种观赏树木。这些树种虽然数量相对较少，但丰富了植物多样性，为园林景观增添了色彩和变化。每种树种都有其独特的观赏特性和生态价值。'}
+        ];
+
+        // 图表配置
+        var option = {
+            title: {
+                text: '树种数量分布',
+                left: 'center',
+                textStyle: {
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                    color: '#000',
+                    fontFamily: 'KaiTi'
+                }
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{b}: {c} ({d}%)'
+            },
+            series: [
+                {
+                    name: '树种数量',
+                    type: 'pie',
+                    radius: '70%',
+                    avoidLabelOverlap: true,
+                    itemStyle: {
+                        borderRadius: 8,
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        color: function(params) {
+                            // 绿色系颜色
+                            var colorList = [
+                                '#a5d6a7', '#81c784', '#66bb6a', '#4caf50', 
+                                '#43a047', '#388e3c', '#2e7d32', '#1b5e20',
+                                '#8bc34a', '#7cb342', '#689f38', '#558b2f'
+                            ];
+                            return colorList[params.dataIndex % colorList.length];
+                        },
+                        fontfamily: 'KaiTi'
+                    },
+                    label: {
+                        show: true,
+                        formatter: '{b|{b}}\n{c|{c}}',
+                        rich: {
+                            b: {
+                                color: '#000',
+                                fontFamily: 'KaiTi',
+                                fontSize: 12,
+                                lineHeight: 20
+                            },
+                            c: {
+                                color: '#000',
+                                fontFamily: 'KaiTi',
+                                fontSize: 10,
+                                lineHeight: 20  
+                            }
+                        }
+                    },
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(46, 125, 50, 0.5)'
+                        },
+                        label: {
+                            show: true,
+                            fontSize: '14',
+                            fontWeight: 'bold',
+                            color: '#000'
+                        }
+                    },
+                    labelLine: {
+                        show: true,
+                        length: 10,
+                        length2: 10,
+                        lineStyle: {
+                            color: '#000'
+                        }
+                    },
+                    data: treeData
+                }
+            ]
+        };
+
+        // 使用配置项显示图表
+        myChart.setOption(option);
+        
+        // 获取DOM元素
+        const overlay = document.getElementById('overlay');
+        const modal = document.getElementById('species-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalContent = document.getElementById('modal-content');
+        const closeBtn = document.getElementById('close-btn');
+        
+        // 点击事件处理
+        myChart.on('click', function(params) {
+            modalTitle.textContent = params.name + ' (' + params.value + '棵)';
+            modalContent.textContent = params.data.desc;
+            
+            // 显示模态框和遮罩层
+            modal.style.display = 'block';
+            overlay.style.display = 'block';
+        });
+        
+        // 关闭模态框
+        closeBtn.addEventListener('click', function() {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+        });
+        
+        // 点击遮罩层也关闭模态框
+        overlay.addEventListener('click', function() {
+            modal.style.display = 'none';
+            overlay.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
